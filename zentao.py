@@ -31,7 +31,7 @@ class ZenTao:
         登录禅道
         :return: 是否成功
         """
-        respond = self.session.get(self.host + '/zentao/api-getsessionid.json')
+        respond = self.session.get(self.host + '/api-getsessionid.json')
         # print(req_get_session.content)
         if respond.status_code != 200:
             warnings.warn('http error: %d' % respond.status_code)
@@ -51,7 +51,7 @@ class ZenTao:
         # print(self.session_name + '=' + self.session_id)
         params = {'account': username, 'password': password}
         # headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-        respond = self.session.post(self.host + '/zentao/user-login.json?{0}={1}'
+        respond = self.session.post(self.host + '/user-login.json?{0}={1}'
                                     .format(self.session_name, self.session_id),
                                     params=params)
         if respond.status_code != 200:
@@ -69,7 +69,7 @@ class ZenTao:
         退出禅道
         :return: 是否成功
         '''
-        respond = self.session.get(self.host + '/zentao/user-logout.json')
+        respond = self.session.get(self.host + '/user-logout.json')
         if respond.status_code != 200:
             warnings.warn('http error: %d' % respond.status_code)
             return False
@@ -85,7 +85,7 @@ class ZenTao:
         获取首页
         :return:
         """
-        respond = self.session.get(self.host + '/zentao/branch-sort.json?{0}={1}'
+        respond = self.session.get(self.host + '/branch-sort.json?{0}={1}'
                                    .format(self.session_name, self.session_id))
         if respond.status_code != 200:
             warnings.warn('http error: %d' % respond.status_code)
@@ -100,7 +100,7 @@ class ZenTao:
         """
         data = {'buildID': id}
         req = self.session.get(
-            self.host + '/zentao/build-view-{0}.json?{1}={2}'.format(
+            self.host + '/build-view-{0}.json?{1}={2}'.format(
                 str(id), self.session_name, self.session_id),
             params=data)
         if req.status_code != 200:
@@ -120,7 +120,7 @@ class ZenTao:
         """
         data = {'projectID': project}
         respond = self.session.get(
-            self.host + '/zentao/build-create-{0}.json?{1}={2}'
+            self.host + '/build-create-{0}.json?{1}={2}'
             .format(str(project), self.session_name, self.session_id),
             params=data)
         if respond.status_code != 200:
@@ -161,7 +161,7 @@ class ZenTao:
         # print(data)
 
         respond = self.session.post(
-            self.host + '/zentao/build-create-{0}.json?{1}={2}'
+            self.host + '/build-create-{0}.json?{1}={2}'
             .format(str(project), self.session_name, self.session_id),
             headers={'Content-Type': data.content_type, 'charset': 'UTF-8'}, data=data)
         if respond.status_code != 200:
@@ -182,7 +182,7 @@ class ZenTao:
         """
         data = {'buildID': id, 'confirm': 'yes'}
         respond = requests.get(
-            self.host + '/zentao/build-delete-{0}-yes.json?{1}={2}'.format(
+            self.host + '/build-delete-{0}-yes.json?{1}={2}'.format(
                 str(id), self.session_name, self.session_id),
             params=data)
         if respond.status_code != 200:
@@ -197,11 +197,11 @@ class ZenTao:
 
 # example code
 if __name__ == '__main__':
-    z = ZenTao('http://127.0.0.1:80')
-    if z.login('admin', '123456'):
+    z = ZenTao('https://pms.dinghuo123.com')
+    if z.login('username', 'password'):
         print('登录成功')
-    if z.create_build(1, 1, 'test', 'admin', 'github.com', 'ftp://192.168.1.1',
-                      ['../a.zip', '../b.zip'], 'describe'):
-        print("创建版本")
-    if z.logout():
-        print('注销成功')
+    # if z.create_build(1, 1, 'test', 'admin', 'github.com', 'ftp://192.168.1.1',
+    #                   ['../a.zip', '../b.zip'], 'describe'):
+    #     print("创建版本")
+    # if z.logout():
+    #     print('注销成功')
