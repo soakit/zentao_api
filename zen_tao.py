@@ -1,4 +1,5 @@
 #-*- coding: UTF-8 -*- 
+import argparse
 import requests
 import json
 import re
@@ -340,7 +341,15 @@ class ZentaoCli(object):
 
 
 if __name__ == "__main__":
-    cli = ZentaoCli("https://pms.dinghuo123.com", "liuchang", "123456@Yiyun", override=False)
+    # 创建参数解析器
+    parser = argparse.ArgumentParser(description='牛13团队生产bug处理提醒')
+    parser.add_argument('--username', required=True, help='禅道用户名')
+    parser.add_argument('--password', required=True, help='禅道密码')
+
+    # 解析命令行参数
+    args = parser.parse_args()
+
+    cli = ZentaoCli("https://pms.dinghuo123.com", args.username, args.password, override=False)
     cli.login()
     # cli.get_user_list()
     # cli.get_build_branch()
