@@ -169,6 +169,8 @@ class ZentaoCli(object):
         bug_list = []
         reminder_list = []  # 提醒列表
 
+        print('查询团队bug中...')
+
         # 1     易订货1.0
         # 18    供应链
         # 27    易订货2.0
@@ -184,7 +186,6 @@ class ZentaoCli(object):
         # 锦坤生产bug -> 534
         # 成双生产bug -> 533
         # 533 ~ 541
-
         for project_id in [18, 27, 1]:  # 遍历1, 18, 27
             for condition in range(533, 542):  # 循环533~541
                 req_url = self.get_api('project_bug_list_with_search').format(project_id, condition)
@@ -248,6 +249,7 @@ class ZentaoCli(object):
                             '剩余天数': remaining_days
                         })
 
+        print('查询团队bug成功')
         return bug_list, reminder_list
 
     def add_business_days(self, start_date, days):
