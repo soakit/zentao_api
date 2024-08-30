@@ -208,7 +208,7 @@ class ZentaoCli(object):
                         '指派日期': item['assignedDate']
                     })
 
-                    # 计算最终处理日期
+                    # 计算截止日期
                     severity = item['severity']
                     is_difficult = '疑难问题' in item['title']
                     # eg: "assignedDate": "2023-09-08 10:36:33",
@@ -225,6 +225,8 @@ class ZentaoCli(object):
                     current_date = datetime.now()
                     last_month = current_date - timedelta(days=current_date.day)
                     last_month_format = last_month.strftime("%Y-%m")
+                    remaining_days = self.calculate_remaining_business_days(final_date)
+
                     if assigned_date.strftime('%Y-%m') >= last_month_format:
                         reminder_list.append({
                             '编号': item['id'],
@@ -232,7 +234,8 @@ class ZentaoCli(object):
                             '操作人': user_map.get(item['openedBy'].lower(), '未知用户'),
                             '指派人': user_map.get(item['assignedTo'].lower(), '未知用户'),
                             '指派日期': item['assignedDate'],
-                            '最终处理日期': final_date.strftime('%Y-%m-%d')
+                            '截止日期': final_date.strftime('%Y-%m-%d'),
+                            '剩余天数': remaining_days
                         })
 
         return bug_list, reminder_list
@@ -244,11 +247,21 @@ class ZentaoCli(object):
         holidays = self.get_holidays()  # 获取中国的法定节假日列表
         current_date = start_date
         added_days = 0
-        while added_days < days:
+        while added_days < (days - 1):
             current_date += timedelta(days=1)
             if current_date.weekday() < 5 and current_date not in holidays:  # 周一到周五且不是节假日
                 added_days += 1
         return current_date
+
+    def calculate_remaining_business_days(self, final_date):
+        current_date = datetime.now()
+        remaining_days = 0
+        holidays = self.get_holidays()  # 获取中国的法定节假日列表
+        while current_date < final_date:
+            current_date += timedelta(days=1)
+            if current_date.weekday() < 5 and current_date not in holidays:  # 周一到周五且不是节假日
+                remaining_days += 1
+        return remaining_days
 
     def get_holidays(self):
         """
@@ -342,5 +355,6 @@ if __name__ == "__main__":
     # 将reminder_list写入reminder.json文件
     with open('reminder.json', 'w', encoding='utf-8') as f:
         json.dump(reminder_list, f, ensure_ascii=False, indent=4)
+        print('生成成功')
     
 
