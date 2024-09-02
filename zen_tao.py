@@ -5,6 +5,7 @@ import json
 import re
 import time
 from datetime import datetime, timedelta
+from tabulate import tabulate
 
 
 class ZentaoCli(object):
@@ -145,6 +146,11 @@ class ZentaoCli(object):
             print('local user list')
             return ZentaoCli.userList, user_map
 
+    def clean_title(self, title):
+        title = title.replace('【生产环境】', '').replace('【生产环境-1.0】', '').replace('【生产环境-易销存】', '').replace('【生产环境-2.0】', '')
+        title = title.strip()
+        return title
+
     # 获取bug列表
     def get_my_bug(self):
         req_url = self.get_api('my_bug')
@@ -157,7 +163,7 @@ class ZentaoCli(object):
             bug_list.append({
                 'uid': item['id'],
                 'title': '{}（by {}）'.format(item['id'], user_map[item['openedBy'].lower()]),
-                'subtitle': item['title'],
+                'subtitle': self.clean_title(item['title']),
                 'arg': self.get_api("bug_detail_html").format(item['id']),
             })
 
@@ -212,7 +218,7 @@ class ZentaoCli(object):
 
                     bug_list.append({
                         '编号': '{}（by {}）'.format(item['id'], user_map.get(item['openedBy'].lower(), '未知用户')),
-                        '标题': item['title'],
+                        '标题': self.clean_title(item['title']),
                         # '链接': self.get_api("bug_detail_html").format(item['id']),
                         '操作人': user_map.get(item['openedBy'].lower(), '未知用户'),
                         '指派人': user_map.get(item['assignedTo'].lower(), '未知用户'),
@@ -241,7 +247,7 @@ class ZentaoCli(object):
                     if assigned_date.strftime('%Y-%m') >= last_month_format:
                         reminder_list.append({
                             '编号': item['id'],
-                            '标题': item['title'],
+                            '标题': self.clean_title(item['title']),
                             '操作人': user_map.get(item['openedBy'].lower(), '未知用户'),
                             '指派人': user_map.get(item['assignedTo'].lower(), '未知用户'),
                             '指派日期': item['assignedDate'],
@@ -372,9 +378,26 @@ if __name__ == "__main__":
 
     # 我的团队bug
     bug_list, reminder_list = cli.get_myteam_bug()
+    reminder_list = sorted(reminder_list, key=lambda x: x['剩余天数'])
+
+    # 缩减title的宽度，超出使用省略号
+    for item in reminder_list:
+        item['标题'] = item['标题'][:20] + '...' if len(item['标题']) > 20 else item['标题']
+
+    # 以表格形式输出到控制台
+    headers = {
+        '编号': '编号',
+        '操作人': '操作人',
+        '指派人': '指派人',
+        '指派日期': '指派日期',
+        '截止日期': '截止日期',
+        '剩余天数': '剩余天数',
+        '标题': '标题'
+    }
+    
+    print(tabulate(reminder_list, headers=headers, tablefmt='grid'))
     # 将reminder_list写入reminder.json文件
     with open('reminder.json', 'w', encoding='utf-8') as f:
         json.dump(reminder_list, f, ensure_ascii=False, indent=4)
-        print('生成成功')
     
 
