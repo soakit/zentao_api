@@ -4,6 +4,7 @@ import requests
 import json
 import re
 import time
+import itertools
 from datetime import datetime, timedelta
 from tabulate import tabulate
 
@@ -147,7 +148,8 @@ class ZentaoCli(object):
             return ZentaoCli.userList, user_map
 
     def clean_title(self, title):
-        title = title.replace('【生产环境】', '').replace('【生产环境-1.0】', '').replace('【生产环境-易销存】', '').replace('【生产环境-2.0】', '')
+        title = title.replace('【生产环境】', '').replace('【生产环境-1.0】', '').replace('【生产环境-易销存】', '').replace('【生产环境-2.0】', '').replace('【生产环境-供应链】', '')
+        
         title = title.strip()
         return title
 
@@ -182,18 +184,24 @@ class ZentaoCli(object):
         # 27    易订货2.0
 
         # condition
+        # 月红生产bug -> 543
         # 丽姿生产bug -> 541
         # 妙凤生产bug -> 540
         # 炜峰生产bug -> 539
-        # 慧琳生产bug -> 538
         # 雨晴生产bug -> 537
         # 于辉生产bug -> 536
         # 刘畅生产bug -> 535
         # 锦坤生产bug -> 534
         # 成双生产bug -> 533
-        # 533 ~ 541
+        
+        # 定义多个区间
+        intervals = [(533, 538), (539, 542), (543, 544)]
+        ranges = list(itertools.chain.from_iterable(range(start, end) for start, end in intervals))
+        
+        print(ranges)
+
         for project_id in [18, 27, 1]:  # 遍历1, 18, 27
-            for condition in range(533, 542):  # 循环533~541
+            for condition in ranges:  # 循环区间
                 req_url = self.get_api('project_bug_list_with_search').format(project_id, condition)
                 response = self.s.get(req_url)
                 try:
