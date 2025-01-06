@@ -8,6 +8,45 @@ import itertools
 from datetime import datetime, timedelta
 from tabulate import tabulate
 
+# 节假日数据
+HOLIDAYS_DATA = {
+    2025: [
+        {"name": "元旦", "date": "2025-01-01", "isOffDay": True},
+        {"name": "春节", "date": "2025-01-26", "isOffDay": False},
+        {"name": "春节", "date": "2025-01-28", "isOffDay": True},
+        {"name": "春节", "date": "2025-01-29", "isOffDay": True},
+        {"name": "春节", "date": "2025-01-30", "isOffDay": True},
+        {"name": "春节", "date": "2025-01-31", "isOffDay": True},
+        {"name": "春节", "date": "2025-02-01", "isOffDay": True},
+        {"name": "春节", "date": "2025-02-02", "isOffDay": True},
+        {"name": "春节", "date": "2025-02-03", "isOffDay": True},
+        {"name": "春节", "date": "2025-02-04", "isOffDay": True},
+        {"name": "春节", "date": "2025-02-08", "isOffDay": False},
+        {"name": "清明节", "date": "2025-04-04", "isOffDay": True},
+        {"name": "清明节", "date": "2025-04-05", "isOffDay": True},
+        {"name": "清明节", "date": "2025-04-06", "isOffDay": True},
+        {"name": "劳动节", "date": "2025-04-27", "isOffDay": False},
+        {"name": "劳动节", "date": "2025-05-01", "isOffDay": True},
+        {"name": "劳动节", "date": "2025-05-02", "isOffDay": True},
+        {"name": "劳动节", "date": "2025-05-03", "isOffDay": True},
+        {"name": "劳动节", "date": "2025-05-04", "isOffDay": True},
+        {"name": "劳动节", "date": "2025-05-05", "isOffDay": True},
+        {"name": "端午节", "date": "2025-05-31", "isOffDay": True},
+        {"name": "端午节", "date": "2025-06-01", "isOffDay": True},
+        {"name": "端午节", "date": "2025-06-02", "isOffDay": True},
+        {"name": "国庆节、中秋节", "date": "2025-09-28", "isOffDay": False},
+        {"name": "国庆节、中秋节", "date": "2025-10-01", "isOffDay": True},
+        {"name": "国庆节、中秋节", "date": "2025-10-02", "isOffDay": True},
+        {"name": "国庆节、中秋节", "date": "2025-10-03", "isOffDay": True},
+        {"name": "国庆节、中秋节", "date": "2025-10-04", "isOffDay": True},
+        {"name": "国庆节、中秋节", "date": "2025-10-05", "isOffDay": True},
+        {"name": "国庆节、中秋节", "date": "2025-10-06", "isOffDay": True},
+        {"name": "国庆节、中秋节", "date": "2025-10-07", "isOffDay": True},
+        {"name": "国庆节、中秋节", "date": "2025-10-08", "isOffDay": True},
+        {"name": "国庆节、中秋节", "date": "2025-10-11", "isOffDay": False}
+    ]
+}
+
 
 class ZentaoCli(object):
     session = None   # 用于实现单例类，避免多次申请sessionID
@@ -270,22 +309,26 @@ class ZentaoCli(object):
         """
         添加工作日，跳过中国的法定节假日
         """
-        holidays = self.get_holidays()  # 获取中国的法定节假日列表
+        holidays, workdays = self.get_holidays()  # 获取中国的法定节假日列表
         current_date = start_date
         added_days = 0
         while added_days < (days - 1):
             current_date += timedelta(days=1)
-            if current_date.weekday() < 5 and current_date not in holidays:  # 周一到周五且不是节假日
+            # 1. 周一到周五且不是节假日
+            # 2. 周末且不是调休补班日
+            if (current_date.weekday() < 5 and current_date not in holidays) or (current_date.weekday() >= 5 and current_date in workdays):
                 added_days += 1
         return current_date
 
     def calculate_remaining_business_days(self, final_date):
         current_date = datetime.now()
         remaining_days = 0
-        holidays = self.get_holidays()  # 获取中国的法定节假日列表
+        holidays, workdays = self.get_holidays()  # 获取中国的法定节假日列表
         while current_date < final_date:
             current_date += timedelta(days=1)
-            if current_date.weekday() < 5 and current_date not in holidays:  # 周一到周五且不是节假日
+            # 1. 周一到周五且不是节假日
+            # 2. 周末且不是调休补班日
+            if (current_date.weekday() < 5 and current_date not in holidays) or (current_date.weekday() >= 5 and current_date in workdays):
                 remaining_days += 1
         return remaining_days
 
@@ -294,7 +337,7 @@ class ZentaoCli(object):
         获取中国的法定节假日列表
         """
         current_date = datetime.now()
-        response = requests.get('http://api.haoshenqi.top/holiday?date=' + str(current_date.year))
+        # response = requests.get('http://api.haoshenqi.top/holiday?date=' + str(current_date.year))
         """
         # eg:
         {
@@ -310,12 +353,16 @@ class ZentaoCli(object):
             2 需要补班的工作日
             3 法定节假日
         """
-        holidays_data = response.json()
+        # holidays_data = response.json()
+        holidays_data = HOLIDAYS_DATA[current_date.year]
 
-        # 过滤出节假日和周末
-        holidays = [datetime.strptime(holiday['date'], '%Y-%m-%d') for holiday in holidays_data if holiday['status'] in [1, 3]]
-        return holidays
-
+        # 取出所有的法定节假日数据，包括与法定节假日相关的需要补班的工作日
+        # 放假
+        holidays = [datetime.strptime(holiday['date'], '%Y-%m-%d') for holiday in holidays_data if holiday['isOffDay']]
+        # 调休补班
+        workdays = [datetime.strptime(holiday['date'], '%Y-%m-%d') for holiday in holidays_data if not holiday['isOffDay']]
+        return holidays, workdays
+    
     # 获取bug 详情
     def get_bug_detail(self, bug_id):
         req_url = self.get_api("bug_detail").format(bug_id)
