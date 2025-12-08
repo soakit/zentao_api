@@ -1,13 +1,11 @@
 #-*- coding: UTF-8 -*- 
 import argparse
+import csv
 import requests
 import json
 import re
 import time
-import itertools
 from datetime import datetime, timedelta
-from tabulate import tabulate
-
 
 class ZentaoCli(object):
     session = None   # 用于实现单例类，避免多次申请sessionID
@@ -29,6 +27,8 @@ class ZentaoCli(object):
             "bug_detail": "/bug-view-{}.json",  # bug 详情
             "bug_detail_html": "/bug-view-{}.html",  # bug 详情的 uid  服了， 这Tmd设计的什么鬼神api
             "project_bug_list_with_search": '/bug-browse-{}-0-bySearch-{}.json',
+            "search_buildQuery": '/search-buildQuery',
+            # bug-browse-27-0-bySearch-myQueryID.html
             "resolve_bug": "/bug-resolve-{}.html?onlybody=yes",  # 解决bug
             "build_branch": '/project-build-220-42.json',  # 跨运管家版本分支
             'file_read': '/file-read-{}',  # 文件读取
@@ -148,7 +148,7 @@ class ZentaoCli(object):
             return ZentaoCli.userList, user_map
 
     def clean_title(self, title):
-        title = title.replace('【生产环境】', '').replace('【生产环境-1.0】', '').replace('【生产环境-易销存】', '').replace('【生产环境-2.0】', '').replace('【生产环境-供应链】', '').replace('【生产环境2.0】', '')
+        # title = title.replace('【生产环境】', '').replace('【生产环境-1.0】', '').replace('【生产环境-易销存】', '').replace('【生产环境-2.0】', '').replace('【生产环境-供应链】', '')
         
         title = title.strip()
         return title
@@ -172,35 +172,23 @@ class ZentaoCli(object):
         return bug_list
 
     # 获取团队成员生产bug
-    def get_myteam_bug(self):
+    def get_myteam_bug(self, project_id, query_id):
         user_list, user_map = self.get_user_list()
         bug_list = []
-        reminder_list = []  # 提醒列表
+        
+        # print(user_map)
 
-        print('查询团队bug中...')
+        print('查询{}项目bug中...'.format(project_id))
 
         # 1     易订货1.0
         # 18    供应链
         # 27    易订货2.0
 
-        # condition
-        # 月红生产bug -> 543
-        # 丽姿生产bug -> 541
-        # 妙凤生产bug -> 540
-        # 炜峰生产bug -> 539
-        # 雨晴生产bug -> 537
-        # 于辉生产bug -> 536
-        # 刘畅生产bug -> 535
-        # 锦坤生产bug -> 534
-        # 成双生产bug -> 533
-        
-        # 定义多个区间
-        intervals = [(533, 538), (539, 542), (543, 544)]
-        ranges = list(itertools.chain.from_iterable(range(start, end) for start, end in intervals))
+        ranges = [query_id]
         
         print(ranges)
 
-        for project_id in [18, 27, 1]:  # 遍历1, 18, 27
+        for project_id in [project_id]:  # 遍历1, 18, 27
             for condition in ranges:  # 循环区间
                 req_url = self.get_api('project_bug_list_with_search').format(project_id, condition)
                 response = self.s.get(req_url)
@@ -214,57 +202,53 @@ class ZentaoCli(object):
                 json_query_data = json.loads(query_data['data'])
                 
                 for item in json_query_data['bugs']:
-                    # severity bug等级
-                    # title 标题
-                    # assignedDate 指派日期
+                    
+                    # 解决天数：
+                    # 1. 先将创建时间和解决时间转换为毫秒数
+                    # 2. 然后解决时间-创建时间的毫秒数差值计算天数。
+                    # 3. 计算的天数要减掉解决时间和创建时间中间的节假日天数
+                    # 4. 天数保留2位小数
+                    # eg:
+                    # 创建时间："openedDate": "2023-09-08 10:36:33",
+                    # 解决时间："resolvedDate": "2023-09-08 18:36:33",
+                    # 解决天数：1.5天
+                    
+                    openDateTime = datetime.strptime(item['openedDate'], '%Y-%m-%d %H:%M:%S')
+                    resolveDateTime = datetime.strptime(item['resolvedDate'], '%Y-%m-%d %H:%M:%S')
+                    
+                    # Calculate the difference as a timedelta object
+                    time_difference = resolveDateTime - openDateTime
+                    # Get the total difference in seconds
+                    total_seconds = time_difference.total_seconds()
+                    # Calculate the difference in days as a float
+                    # There are 60 * 60 * 24 = 86400 seconds in a day
+                    diffDays_float = total_seconds / 86400
+                    # Round the float result to 2 decimal places
+                    diffDays = round(diffDays_float, 2)
 
-                    # 处理规则
-                    # ● 一级BUG 当天处理；
-                    # ● 二级BUG 3个工作日内处理，疑难问题10个工作日内处理；
-                    # ● 三级BUG 3个工作日内处理，疑难问题20个工作日内处理；
-                    # ● 四级BUG 30个工作日内处理。
-
-                    bug_list.append({
-                        '编号': '{}（by {}）'.format(item['id'], user_map.get(item['openedBy'].lower(), '未知用户')),
-                        '标题': self.clean_title(item['title']),
-                        # '链接': self.get_api("bug_detail_html").format(item['id']),
-                        '操作人': user_map.get(item['openedBy'].lower(), '未知用户'),
-                        '指派人': user_map.get(item['assignedTo'].lower(), '未知用户'),
-                        '指派日期': item['assignedDate']
-                    })
-
-                    # 计算截止日期
-                    severity = item['severity']
-                    is_difficult = '疑难问题' in item['title']
-                    # eg: "assignedDate": "2023-09-08 10:36:33",
-                    assigned_date_str = item['assignedDate'].split(' ')[0]  # 提取日期部分
-                    assigned_date = datetime.strptime(assigned_date_str, '%Y-%m-%d')
-                    final_date = assigned_date
-                    if severity == '2':
-                        final_date = self.add_business_days(assigned_date, 10 if is_difficult else 3)
-                    elif severity == '3':
-                        final_date = self.add_business_days(assigned_date, 20 if is_difficult else 3)
-                    elif severity == '4':
-                        final_date = self.add_business_days(assigned_date, 30)
-
-                    current_date = datetime.now()
-                    last_month = current_date - timedelta(days=current_date.day)
-                    last_month_format = last_month.strftime("%Y-%m")
-                    remaining_days = self.calculate_remaining_business_days(final_date)
-
-                    if assigned_date.strftime('%Y-%m') >= last_month_format:
-                        reminder_list.append({
+                    item['solve_days'] = diffDays
+                    
+                    frontEnds = ['wangjie', 'jianxf', 'yuanyang', 'liuchang', 'tangwf', 'likg', 'qiuyq', 'liujc', 'mayy']
+                    # 无效的BUG包括： 设计如此（bydesign）、 重复BUG（duplicate）、 转为需求（tostory）、 不是BUG（notbug）， 外部原因（external）
+                    invalidBug = ['duplicate', 'notbug', 'external', 'bydesign', 'tostory']
+                    
+                    # item['solve_days'] > 1 and
+                    # 标题不包含"疑难"
+                    if "疑难" not in item['title'] and item['resolvedBy'] in frontEnds and item['resolution'] not in invalidBug:  
+                        bug_list.append({
+                            # '编号': '{}（by {}）'.format(item['id'], user_map.get(item['openedBy'].lower(), '未知用户')),
                             '编号': item['id'],
                             '标题': self.clean_title(item['title']),
-                            '操作人': user_map.get(item['openedBy'].lower(), '未知用户'),
-                            '指派人': user_map.get(item['assignedTo'].lower(), '未知用户'),
+                            '解决者': user_map.get(item['resolvedBy'].lower(), '未知用户'),
+                            '链接': self.get_api("bug_detail_html").format(item['id']),
+                            '创建日期': item['openedDate'],
                             '指派日期': item['assignedDate'],
-                            '截止日期': final_date.strftime('%Y-%m-%d'),
-                            '剩余天数': remaining_days
-                        })
+                            '解决日期': item['resolvedDate'],
+                            '解决天数': item['solve_days'],
+                            '解决方案': item['resolution'],
+                    })
 
-        print('查询团队bug成功')
-        return bug_list, reminder_list
+        return bug_list
 
     def add_business_days(self, start_date, days):
         """
@@ -383,29 +367,91 @@ if __name__ == "__main__":
     # 我的bug
     # my_bugs = cli.get_my_bug()
     # print(my_bugs)
+    
+    query_id = 'myQueryID--1000-1000-1'
+    
+    startDate = '2025-01-01'
+    endDate = '2025-03-31'
+    
+    project_ids = [27, 18, 1]
+    
+    allBug = []
+    
+    for project_id in project_ids:
+        # 构造禅道查询条件
+        params = {
+            'fieldconfirmed': 'ZERO',
+            'fieldproduct': project_id,
+            'fieldmodule': 'ZERO',
+            'fieldseverity': '0',
+            'fieldpri': '0',
+            'andOr1': 'AND',
+            'field1': 'title',
+            'operator1': 'notinclude',
+            'value1': '疑难',
+            'andOr2': 'and',
+            'field2': 'title',
+            'operator2': 'include',
+            'value2': '生产环境',
+            'andOr3': 'and',
+            'field3': 'status',
+            'operator3': '!=',
+            'value3': 'active',
+            'groupAndOr': 'and',
+            'andOr4': 'AND',
+            'field4': 'openedDate',
+            'operator4': '>=',
+            'value4': startDate,
+            'andOr5': 'and',
+            'field5': 'openedDate',
+            'operator5': '<=',
+            'value5': endDate,
+            'andOr6': 'and',
+            'field6': 'resolution',
+            'operator6': 'notinclude',
+            'value6': 'notbug',
+            'module': 'bug',
+            'actionURL': '/bug-browse-{}-0-bySearch-{}.html'.format(project_id, query_id),
+            'groupItems': '3',
+            'formType': 'more',
+        }
+        search_buildQuery = cli.s.post(cli.get_api('search_buildQuery'), params)
+        bug = cli.get_myteam_bug(project_id, query_id)
+        allBug.extend(bug)
+    
+    # print(search_buildQuery.text)
+    # print(allBug)
 
     # 我的团队bug
-    bug_list, reminder_list = cli.get_myteam_bug()
-    reminder_list = sorted(reminder_list, key=lambda x: x['剩余天数'])
+    # bug_list, reminder_list = cli.get_myteam_bug()
+    # reminder_list = sorted(reminder_list, key=lambda x: x['剩余天数'])
 
     # 缩减title的宽度，超出使用省略号
-    for item in reminder_list:
-        item['标题'] = item['标题'][:20] + '...' if len(item['标题']) > 20 else item['标题']
+    # for item in reminder_list:
+    #     item['标题'] = item['标题'][:20] + '...' if len(item['标题']) > 20 else item['标题']
 
     # 以表格形式输出到控制台
-    headers = {
-        '编号': '编号',
-        '操作人': '操作人',
-        '指派人': '指派人',
-        '指派日期': '指派日期',
-        '截止日期': '截止日期',
-        '剩余天数': '剩余天数',
-        '标题': '标题'
-    }
+    # headers = {
+    #     '编号': '编号',
+    #     '操作人': '操作人',
+    #     '指派人': '指派人',
+    #     '指派日期': '指派日期',
+    #     '截止日期': '截止日期',
+    #     '剩余天数': '剩余天数',
+    #     '标题': '标题'
+    # }
     
-    print(tabulate(reminder_list, headers=headers, tablefmt='grid'))
-    # 将reminder_list写入reminder.json文件
-    with open('reminder.json', 'w', encoding='utf-8') as f:
-        json.dump(reminder_list, f, ensure_ascii=False, indent=4)
+    # print(tabulate(allBug, headers=headers, tablefmt='grid'))
     
+    # 将allBug写入allBugs.json文件
+    with open('allBugs.json', 'w', encoding='utf-8') as f:
+        json.dump(allBug, f, ensure_ascii=False, indent=4)
+    
+    # 将allBug写入到csv文件
+    with open('allBugs.csv', 'w', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(['编号', '标题', '解决者', '链接', '创建日期', '指派日期', '解决日期', '解决天数', '解决方案'])
+        for item in allBug:
+            writer.writerow([item['编号'], item['标题'], item['解决者'], item['链接'], item['创建日期'], item['指派日期'], item['解决日期'], item['解决天数'], item['解决方案']])
+
 
