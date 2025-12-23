@@ -184,6 +184,7 @@ class ZentaoCli(object):
         # 27    易订货2.0
 
         # condition
+        # 之赛生产bug -> 582
         # 月红生产bug -> 543
         # 丽姿生产bug -> 541
         # 妙凤生产bug -> 540
@@ -195,7 +196,7 @@ class ZentaoCli(object):
         # 成双生产bug -> 533
         
         # 定义多个区间
-        intervals = [(533, 538), (539, 542), (543, 544)]
+        intervals = [(533, 538), (539, 542), (543, 544), (582, 583)]
         ranges = list(itertools.chain.from_iterable(range(start, end) for start, end in intervals))
         
         print(ranges)
