@@ -190,14 +190,14 @@ class ZentaoCli(object):
                     else:
                         item['solvedDays'] = None
                     
-                    frontEnds = ['jianxf', 'yuanyang', 'liuchang', 'tangwf', 'likg', 'lixy', 'wuzs', 'qiuyq', 'liujc', 'wangjie', 'huangxf', 'chenghy']
+                    employees = ['liuchang', 'tangwf', 'huangxf', 'wuzs', 'weics', 'dengjk', 'xiaoyh', 'huyh']
                     # 无效的BUG包括： 设计如此（bydesign）、 重复BUG（duplicate）、 转为需求（tostory）、 不是BUG（notbug）， 外部原因（external）
                     # invalidBug = ['duplicate', 'notbug', 'external', 'bydesign', 'tostory']
                     invalidBug = []
                     
                     # 标题不包含"疑难"
                     # "疑难" not in item['title'] and 
-                    if item['assignedTo'] in frontEnds or item['resolvedBy'] in frontEnds and item['resolution'] not in invalidBug:  
+                    if item['assignedTo'] in employees or item['resolvedBy'] in employees and item['resolution'] not in invalidBug:  
                         bug_list.append({
                             '编号': item['id'],
                             '标题': self.clean_title(item['title']),
@@ -281,7 +281,7 @@ if __name__ == "__main__":
         print('{}项目bug查询完成'.format(project_id))
         allBug.extend(bug)
     
-    title = '2025年度前端生产bug'
+    title = '2025年度牛13团队生产bug'
     file_name = f'{title}.json'
     csv_name = f'{title}.csv'
 
