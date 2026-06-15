@@ -190,10 +190,9 @@ class ZentaoCli(object):
                     else:
                         item['solvedDays'] = None
                     
-                    employees = ['liuchang', 'tangwf', 'huangxf', 'wuzs', 'weics', 'dengjk', 'xiaoyh', 'huyh']
+                    employees = ['liuchang', 'wuzs', 'weics', 'dengjk', 'wangkx', 'huyh']
                     # 无效的BUG包括： 设计如此（bydesign）、 重复BUG（duplicate）、 转为需求（tostory）、 不是BUG（notbug）， 外部原因（external）
-                    # invalidBug = ['duplicate', 'notbug', 'external', 'bydesign', 'tostory']
-                    invalidBug = []
+                    invalidBug = ['duplicate']
                     
                     # 标题不包含"疑难"
                     # "疑难" not in item['title'] and 
@@ -230,8 +229,8 @@ if __name__ == "__main__":
     
     query_id = 'myQueryID--1000-1000-1'
     
-    startDate = '2025-01-01'
-    endDate = '2025-12-31'
+    startDate = '2026-05-01'
+    endDate = '2026-05-31'
     
     project_ids = [27, 18, 1]
     
@@ -245,10 +244,10 @@ if __name__ == "__main__":
             'fieldmodule': 'ZERO',
             'fieldseverity': '0',
             'fieldpri': '0',
-            'andOr1': 'AND',
-            'field1': 'title',
-            'operator1': 'notinclude',
-            'value1': '疑难',
+            # 'andOr1': 'AND',
+            # 'field1': 'title',
+            # 'operator1': 'notinclude',
+            # 'value1': '疑难',
             'andOr2': 'and',
             'field2': 'title',
             'operator2': 'include',
@@ -266,10 +265,10 @@ if __name__ == "__main__":
             'field5': 'openedDate',
             'operator5': '<=',
             'value5': endDate,
-            'andOr6': 'and',
-            'field6': 'resolution',
-            'operator6': 'notinclude',
-            'value6': 'notbug',
+            # 'andOr6': 'and',
+            # 'field6': 'resolution',
+            # 'operator6': 'notinclude',
+            # 'value6': 'notbug',
             'module': 'bug',
             'actionURL': '/bug-browse-{}-0-bySearch-{}.html'.format(project_id, query_id),
             'groupItems': '3',
@@ -281,7 +280,7 @@ if __name__ == "__main__":
         print('{}项目bug查询完成'.format(project_id))
         allBug.extend(bug)
     
-    title = '2025年度牛13团队生产bug'
+    title = '2026年5月牛13团队生产bug'
     file_name = f'{title}.json'
     csv_name = f'{title}.csv'
 
