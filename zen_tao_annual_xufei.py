@@ -231,8 +231,8 @@ if __name__ == "__main__":
     
     query_id = 'myQueryID--1000-1000-1'
     
-    startDate = '2026-06-01'
-    endDate = '2026-06-15'
+    startDate = '2026-06-15'
+    endDate = '2026-06-22'
     
     project_ids = [27, 18, 1]
     
@@ -282,7 +282,7 @@ if __name__ == "__main__":
         print('{}项目bug查询完成'.format(project_id))
         allBug.extend(bug)
     
-    title = '2026年6月1日-15日续费团队生产bug'
+    title = '2026年6月15日-22日续费团队生产bug'
     file_name = f'{title}.json'
     csv_name = f'{title}.csv'
 
