@@ -142,6 +142,7 @@ class ZentaoCli(object):
             'fixed': '已解决',
             'duplicate': '重复BUG',
             'notbug': '不是BUG',
+            'config': '配置错误',
             'external': '外部原因',
             'bydesign': '设计如此',
             'tostory': '转为需求',
@@ -227,8 +228,8 @@ if __name__ == "__main__":
     
     query_id = 'myQueryID--1000-1000-1'
     
-    startDate = '2026-06-15'
-    endDate = '2026-06-22'
+    startDate = '2026-06-01'
+    endDate = '2026-06-30'
     
     project_ids = [27, 18, 1]
     
@@ -278,7 +279,7 @@ if __name__ == "__main__":
         print('{}项目bug查询完成'.format(project_id))
         allBug.extend(bug)
     
-    title = '2026年6月15日-22日非400组生产bug'
+    title = '2026年6月1日-30日非400组生产bug'
     file_name = f'{title}.json'
     csv_name = f'{title}.csv'
 

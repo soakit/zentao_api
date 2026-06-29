@@ -142,6 +142,7 @@ class ZentaoCli(object):
             'fixed': '已解决',
             'duplicate': '重复BUG',
             'notbug': '不是BUG',
+            'config': '配置错误',
             'external': '外部原因',
             'bydesign': '设计如此',
             'tostory': '转为需求',

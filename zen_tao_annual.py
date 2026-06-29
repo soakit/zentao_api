@@ -142,6 +142,7 @@ class ZentaoCli(object):
             'fixed': '已解决',
             'duplicate': '重复BUG',
             'notbug': '不是BUG',
+            'config': '配置错误',
             'external': '外部原因',
             'bydesign': '设计如此',
             'tostory': '转为需求',
@@ -193,7 +194,7 @@ class ZentaoCli(object):
                     frontEnds = ['jianxf', 'yuanyang', 'liuchang', 'tangwf', 'likg', 'lixy', 'wuzs', 'qiuyq', 'liujc', 'wangjie', 'huangxf', 'chenghy']
                     # 无效的BUG包括： 设计如此（bydesign）、 重复BUG（duplicate）、 转为需求（tostory）、 不是BUG（notbug）， 外部原因（external）
                     # invalidBug = ['duplicate', 'notbug', 'external', 'bydesign', 'tostory']
-                    invalidBug = []
+                    # invalidBug = []
                     
                     # 标题不包含"疑难"
                     # "疑难" not in item['title'] and 
